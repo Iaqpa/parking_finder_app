@@ -45,5 +45,5 @@ python index.py
 
 ## Screenshots
 
-![demo.png](demo.png)
+![backend/demo.png](demo.png)
 
