@@ -1,12 +1,9 @@
-import psycopg2
 import pandas as pd
-from datetime import datetime
-import numpy as np
 from threading import Lock
 from app import engine
 from sqlalchemy.types import Integer, Text, Float
-
-
+from app import db
+from app import Camera
 
 
 class SingletonMeta(type):
@@ -43,10 +40,9 @@ class SingletonMeta(type):
                 instance = super().__call__(*args, **kwargs)
                 cls._instances[cls] = instance
         return cls._instances[cls]
-# Here you want to change your database, username & password according to your own values
 
-class PostgresConnection(metaclass=SingletonMeta):
 
+class DBconnection(metaclass=SingletonMeta):
     def get_cameras(self):
         try:
             cameras_df = pd.read_sql_table(
@@ -54,21 +50,23 @@ class PostgresConnection(metaclass=SingletonMeta):
                 con=engine
             )
         except ValueError:
-            cameras_df = pd.DataFrame(columns=['camera_id', 'lon', 'lat', 'source'])
+            cameras_df = pd.DataFrame(columns=['id', 'lon', 'lat', 'source'])
             cameras_df.to_sql(
                 'cameras',
                 engine,
                 if_exists='replace',
                 index=False,
                 dtype={
-                    "camera_id": Integer,
+                    "id": Integer,
                     "lon": Float,
                     'lat': Float,
                     'source': Text
                 }
             )
         return cameras_df
+
     def get_rects_for_camera(self, camera_id):
+        # exeute("""SELECT * FROM parking_boxes where camera_id={}""".format(camera_id))
         rects = [[(659.5276, 482.7602), (748.8723, 529.75305)],
                   [(947.66626, 279.93768), (965.4137, 294.1808)],
                   [(745.0082, 248.91858), (757.2035, 257.93304)],
@@ -90,16 +88,23 @@ class PostgresConnection(metaclass=SingletonMeta):
                   [(789.88586, 272.18997), (822.502, 289.53775)],
                   [(790.25214, 272.1839), (823.23236, 290.24084)]]
         return rects
+
     def add_new_cameras(self, new_cameras_df):
-        new_cameras_df.to_sql(
-            'cameras',
-            engine,
-            if_exists='replace',
-            index=False,
-            dtype={
-                "camera_id": Integer,
-                "lon": Float,
-                'lat': Float,
-                'source': Text
-            }
-        )
+        for i, camera in new_cameras_df.iterrows():
+            new_camera = Camera(lat = camera['lat'],
+                              lon=camera['lon'],
+                              source=camera['source'])
+            db.session.add(new_camera)
+        db.session.commit()
+        # print(new_cameras_df)
+        # new_cameras_df.to_sql(
+        #     'cameras',
+        #     engine,
+        #     if_exists='replace',
+        #     index=False,
+        #     dtype={
+        #         "lon": Float,
+        #         'lat': Float,
+        #         'source': Text
+        #     }
+        # )

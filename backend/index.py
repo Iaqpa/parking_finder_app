@@ -1,29 +1,19 @@
 # dash packages
-import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-import dash_table
-# general packages
-import pandas as pd
-import numpy as np
-from datetime import datetime
-# my packages
+# local packages
 from DataLoader import DataLoader
 from app import app
-import os
-
-dataloader = DataLoader()
 from apps import cameras_layout
-from werkzeug.serving import run_simple
 
-pd.options.mode.chained_assignment = 'raise'
+
+# Получение данных с Бд
+dataloader = DataLoader()
 cameras_table = dataloader.get_cameras_table()
-
-
-sidebar = html.Div([
-
+# Навбар
+menu = html.Div([
     html.Div([
         dbc.Navbar(
             [
@@ -34,12 +24,10 @@ sidebar = html.Div([
                             style={
                                 "background": "#343a3f",
                                 "border": "none"
-                                # "color": "rgba(0,0,0,.5)",
-                                # "border-color": "rgba(0,0,0,.1)",
                             },
                             id="sidebar-toggle",
-                            # className="btn btn-default"
-                        ), style={"margin-left": "1rem", "display":"flex"}, width={"size": 1}, ),
+                            ),
+                            style={"margin-left": "1rem", "display":"flex"}, width={"size": 1}),
                         dbc.Col(dbc.NavbarBrand("PARKING FINDER", className="ml-2"), width={"size": 7, "offset": 1}),
 
                     ],
@@ -51,20 +39,10 @@ sidebar = html.Div([
             color="dark",
             dark=True,
             style={"width": "100%", "height": "4rem", "padding": "0rem"}
-        ),
-        dbc.Row([
-
-            html.Div(dcc.Interval(id="progress-interval", n_intervals=0, interval=500, disabled=True),
-                     id="progress_div"),
-            dbc.Collapse(dbc.Col(dbc.Progress(id="progress", value=50, style={"height": "4px"}), width=12),
-                         id="progress_collapse",
-                         is_open=False,
-                         style={"width": "100%"})
-
-        ])],
+        )],
         id="header"),
-    html.Div([
 
+    html.Div([
         dbc.Collapse(
             dbc.Nav(
                 [
@@ -83,8 +61,7 @@ sidebar = html.Div([
                         ],
                             justify="between"),
                         href="/page-2",
-                        id="page-2-link"),
-                    dbc.NavLink("Настройки", href="/page-3", id="page-3-link"),
+                        id="page-2-link")
                 ],
                 vertical=True,
                 pills=True,
@@ -96,30 +73,31 @@ sidebar = html.Div([
         id="sidebar"),
     html.Div(id="page-content", children=[])
 ])
+# Установка layout
+app.layout = html.Div([dcc.Location(id="url"), menu])
 
-app.layout = html.Div([dcc.Location(id="url"), sidebar])
 
-
+# Выбор активной вкладки
 @app.callback(
-    [Output(f"page-{i}-link", "active") for i in range(1, 4)],
+    [Output(f"page-{i}-link", "active") for i in range(1, 3)],
     [Input("url", "pathname")],
 )
 def toggle_active_links(pathname):
-    # print(pathname)
     if pathname == "/page-1/":
-        return True, False, False
-    return [pathname == f"/page-{i}" for i in range(1, 4)]
+        return True, False
+    return [pathname == f"/page-{i}" for i in range(1, 3)]
 
 
-# , State("dataset_choose_dropdown", "value")
-@app.callback(Output("page-content", "children"), [Input("url", "pathname")])
+# Вставка нужной страницы
+@app.callback(
+    Output("page-content", "children"),
+    [Input("url", "pathname")]
+)
 def render_page_content(pathname):
-    if pathname in ["/", "/page-1", "/page-1/"]:
+    if pathname in ["/page-1", "/page-1/"]:
         return cameras_layout.layout
     # elif pathname == "/page-2":
     #     return datasets.layout
-    # elif pathname == "/page-3":
-    #     return settings.layout
     return dbc.Jumbotron(
         [
             html.H1("404: Not found", className="text-danger"),
@@ -129,6 +107,7 @@ def render_page_content(pathname):
     )
 
 
+# Toggle sidebar
 @app.callback(
     Output("sidebar", "className"),
     [Input("sidebar-toggle", "n_clicks")],
@@ -140,7 +119,5 @@ def toggle_classname(n, classname):
     return ""
 
 
-
-
 if __name__ == "__main__":
-    app.run_server(port=int(os.environ.get("PORT", 5001)), debug=True, host="0.0.0.0")
+    app.run_server(port=8888, debug=True)

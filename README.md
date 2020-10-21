@@ -42,6 +42,7 @@ pip install -r requirements.txt
 ```
 python index.py
 ```
+открыть в браузере http://127.0.0.1:8888/page-1
 
 ## Screenshots
 

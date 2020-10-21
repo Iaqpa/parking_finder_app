@@ -1,17 +1,5 @@
-import pandas as pd
-import json
-from datetime import datetime, timedelta
-import time
-import requests
-import pickle
-import glob
-import numpy as np
 from threading import Lock
-
-
-from Model.dbconnection import PostgresConnection
-
-current_milli_time = lambda: int(round(time.time() * 1000))
+from Model.dbconnection import DBconnection
 
 
 class SingletonMeta(type):
@@ -30,12 +18,8 @@ class SingletonMeta(type):
 class DataLoader(metaclass=SingletonMeta):
     def __init__(self):
         print("start dataloader init")
-        self.dbconnection = PostgresConnection()
-
-
-        # self.ke_fetcher.download_stock()
+        self.dbconnection = DBconnection()
         self.cameras_table = self.dbconnection.get_cameras()
-
 
     def get_cameras_table(self):
         return self.cameras_table
@@ -45,4 +29,3 @@ class DataLoader(metaclass=SingletonMeta):
 
     def add_new_cameras_to_db(self, new_cameras):
         self.dbconnection.add_new_cameras(new_cameras)
-
