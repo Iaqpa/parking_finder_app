@@ -5,6 +5,7 @@ import torchvision
 from PIL import Image
 from app import engine
 import ast
+import torch
 from sqlalchemy.sql import text
 
 
@@ -64,6 +65,13 @@ class nnAPI:
         # Подключаем модель
         self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
         self.model.eval()
+        if torch.cuda.is_available():
+            dev = "cuda:0"
+        else:
+            dev = "cpu"
+        device = torch.device(dev)
+        print(device)
+        self.model.to(torch.device(dev))
         self.car_boxes = []  # для фильтрации по машинам
         self.COCO_INSTANCE_CATEGORY_NAMES = [
             '__background__', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
@@ -84,10 +92,11 @@ class nnAPI:
         img = Image.fromarray(img_cv2)  # Загрузка изображения
         transform = T.Compose([T.ToTensor()])  # задаем транформацию для изображения
         img = transform(img)  # применяем трансформацию к изображению
+        img = img.cuda()
         pred = self.model([img])  # Передаем изображение нашей модели
-        pred_class = [self.COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(pred[0]['labels'].numpy())]  # классы
-        pred_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(pred[0]['boxes'].detach().numpy())]  # рамки
-        pred_score = list(pred[0]['scores'].detach().numpy())
+        pred_class = [self.COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(pred[0]['labels'].cpu().numpy())]  # классы
+        pred_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(pred[0]['boxes'].detach().cpu().numpy())]  # рамки
+        pred_score = list(pred[0]['scores'].detach().cpu().numpy())
         pred_t = [pred_score.index(x) for x in pred_score if x > threshold][-1]  # получение индексов > порога
         pred_boxes = pred_boxes[:pred_t+1]
         pred_class = pred_class[:pred_t+1]

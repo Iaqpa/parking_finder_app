@@ -20,9 +20,11 @@ from Model.nnAPI import nnAPI
 nnapi = nnAPI()
 
 server = flask.Flask(__name__)
+
 server.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sqllite.db'
 server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(server)
+
 
 # Модель БД
 class Camera(db.Model):
@@ -32,14 +34,17 @@ class Camera(db.Model):
     lat = db.Column(db.Float)
     source = db.Column(db.String(500))
 
+
 class ParkingBoxes(db.Model):
     __tablename__ = "parking_boxes"
     id = db.Column(db.Integer, primary_key=True)
     parkings = db.Column(db.String(500))
     camera_id = db.Column(db.Integer, ForeignKey('cameras.id'))
 
+
 if not os.path.exists('sqllite.db'):
     db.create_all()
+
 
 def distance(x1, y1, x2, y2):
     return ((x2 - x1)**2 + (y2 - y1)**2)**0.5
